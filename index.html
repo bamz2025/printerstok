@@ -41,6 +41,7 @@
     .data-row {
       display: flex;
       justify-content: space-between;
+      align-items: center;
       padding: 7px 0;
       border-bottom: 1px dashed #dde;
       font-size: 0.95rem;
@@ -48,6 +49,14 @@
     .data-row:last-child { border-bottom: none; }
     .data-row .label { color: #7f8c8d; font-weight: 500; }
     .data-row .value { font-weight: 600; text-align: right; max-width: 60%; word-break: break-word; }
+    .data-row input {
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-size: 0.9rem;
+      width: 145px;
+      text-align: right;
+    }
     .btn {
       width: 100%;
       padding: 14px;
@@ -185,7 +194,13 @@
           <span class="label">Tanggal Kadaluarsa</span>
           <span class="value" id="tglExp">-</span>
         </div>
+        <!-- FIELD BARU: Tanggal Keluar (diisi manual) -->
+        <div class="data-row">
+          <span class="label">Tanggal Keluar</span>
+          <input type="date" id="tglKeluar" onchange="updateTglKeluar()">
+        </div>
       </div>
+
       <!-- Tombol -->
       <button class="btn btn-connect" id="btnConnect" onclick="connectPrinter()">
         Sambungkan Printer Bluetooth
@@ -228,6 +243,10 @@
         <span>Tgl Exp</span>
         <strong id="printTglExp">-</strong>
       </div>
+      <div class="print-row">
+        <span>Tgl Keluar</span>
+        <strong id="printTglKeluar">-</strong>
+      </div>
       <div class="print-line"></div>
       <div class="print-qr">
         <img id="printQrImg" src="" alt="QR Code">
@@ -240,13 +259,14 @@
     let printerCharacteristic = null;
     const BLUETOOTH_SERVICE_UUID = '000018f0-0000-1000-8000-00805f9b34fb';
     const BLUETOOTH_CHARACTERISTIC_UUID = '00002af1-0000-1000-8000-00805f9b34fb';
-    
-    // Data dari URL parameter
+
+    // Data dari URL parameter + Tanggal Keluar
     let dataBarang = {
       nama: '-',
       kategori: '-',
       tglMasuk: '-',
-      tglExp: '-'
+      tglExp: '-',
+      tglKeluar: '-'
     };
 
     // ================= AMBIL DATA DARI URL =================
@@ -263,6 +283,12 @@
       document.getElementById('kategori').textContent = dataBarang.kategori;
       document.getElementById('tglMasuk').textContent = dataBarang.tglMasuk;
       document.getElementById('tglExp').textContent = dataBarang.tglExp;
+    }
+
+    // Update Tanggal Keluar saat diubah manual
+    function updateTglKeluar() {
+      const val = document.getElementById('tglKeluar').value;
+      dataBarang.tglKeluar = val || '-';
     }
 
     // ================= FUNGSI KONEKSI PRINTER =================
@@ -311,9 +337,10 @@
       const kategori = data.kategori || '-';
       const tglMasuk = data.tglMasuk || '-';
       const tglExp = data.tglExp || '-';
+      const tglKeluar = data.tglKeluar || '-';
 
-      // Data yang masuk ke QR Code
-      const qrData = `${nama}|${kategori}|${tglMasuk}|${tglExp}`;
+      // Data yang masuk ke QR Code (termasuk Tgl Keluar)
+      const qrData = `${nama}|${kategori}|${tglMasuk}|${tglExp}|${tglKeluar}`;
 
       const commands = [
         '\x1B\x40',                    // Initialize
@@ -323,10 +350,11 @@
         '\x1B\x21\x00',                // Normal
         '========================\n',
         '\x1B\x61\x00',                // Left
-        `Nama     : ${nama}\n`,
-        `Kategori : ${kategori}\n`,
-        `Tgl Masuk: ${tglMasuk}\n`,
-        `Tgl Exp  : ${tglExp}\n`,
+        `Nama      : ${nama}\n`,
+        `Kategori  : ${kategori}\n`,
+        `Tgl Masuk : ${tglMasuk}\n`,
+        `Tgl Exp   : ${tglExp}\n`,
+        `Tgl Keluar: ${tglKeluar}\n`,
         '========================\n',
         '\x1B\x61\x01',                // Center
         generateQRCodeESC(qrData),
@@ -367,21 +395,25 @@
 
     // ================= FUNGSI CETAK UMUM (DENGAN QR CODE) =================
     function cetakUmum() {
-      const qrData = `${dataBarang.nama}|${dataBarang.kategori}|${dataBarang.tglMasuk}|${dataBarang.tglExp}`;
+      // Pastikan Tanggal Keluar ter-update
+      updateTglKeluar();
+
+      const qrData = `${dataBarang.nama}|${dataBarang.kategori}|${dataBarang.tglMasuk}|${dataBarang.tglExp}|${dataBarang.tglKeluar}`;
 
       // Isi data teks
       document.getElementById('printNama').textContent = dataBarang.nama;
       document.getElementById('printKategori').textContent = dataBarang.kategori;
       document.getElementById('printTglMasuk').textContent = dataBarang.tglMasuk;
       document.getElementById('printTglExp').textContent = dataBarang.tglExp;
+      document.getElementById('printTglKeluar').textContent = dataBarang.tglKeluar;
 
-      // Generate QR Code gambar (menggunakan API gratis)
+      // Generate QR Code gambar
       const qrImg = document.getElementById('printQrImg');
       qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(qrData)}`;
 
       updateStatus('Membuka dialog cetak umum...', '#8e44ad');
       
-      // Tunggu sebentar agar gambar QR termuat, lalu print
+      // Tunggu agar gambar QR termuat, lalu print
       setTimeout(() => {
         window.print();
         updateStatus('Siap cetak (Thermal / Umum)', '#27ae60');
