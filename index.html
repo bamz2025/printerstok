@@ -169,7 +169,7 @@
   <div class="container">
     <div class="header">
       <h1>Cetak Label Barang</h1>
-      <p>Thermal Printer Bluetooth</p>
+      <p>LAB TERPADU RSSM</p>
     </div>
     <div class="content">
       <!-- Data yang akan dicetak -->
@@ -201,7 +201,7 @@
       </button>
       <!-- TOMBOL CETAK UMUM -->
       <button class="btn btn-print-umum" onclick="cetakUmum()">
-        Cetak Umum (Printer Biasa)
+        Cetak Printer Biasa
       </button>
       <button class="btn btn-close" onclick="window.close()">
         Tutup
@@ -209,7 +209,7 @@
       <div id="status">Status: Menunggu koneksi printer...</div>
     </div>
     <div class="footer">
-      Sistem Inventaris Barang • Web Bluetooth
+      © 2025 Sistem Manajemen Inventaris Barang
     </div>
   </div>
 
@@ -395,7 +395,7 @@
       // Tunggu agar gambar QR termuat, lalu print
       setTimeout(() => {
         window.print();
-        updateStatus('Siap cetak (Thermal / Umum)', '#27ae60');
+        updateStatus('Siap cetak', '#27ae60');
       }, 600);
     }
 
