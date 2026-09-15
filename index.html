@@ -41,7 +41,6 @@
     .data-row {
       display: flex;
       justify-content: space-between;
-      align-items: center;
       padding: 7px 0;
       border-bottom: 1px dashed #dde;
       font-size: 0.95rem;
@@ -49,14 +48,6 @@
     .data-row:last-child { border-bottom: none; }
     .data-row .label { color: #7f8c8d; font-weight: 500; }
     .data-row .value { font-weight: 600; text-align: right; max-width: 60%; word-break: break-word; }
-    .data-row input {
-      border: 1px solid #ccc;
-      border-radius: 6px;
-      padding: 6px 10px;
-      font-size: 0.9rem;
-      width: 145px;
-      text-align: right;
-    }
     .btn {
       width: 100%;
       padding: 14px;
@@ -158,6 +149,11 @@
         font-size: 14px;
         text-align: left;
       }
+      .print-blank {
+        margin: 8px 0;
+        font-size: 14px;
+        text-align: left;
+      }
       .print-qr {
         margin-top: 12px;
         text-align: center;
@@ -193,11 +189,6 @@
         <div class="data-row">
           <span class="label">Tanggal Kadaluarsa</span>
           <span class="value" id="tglExp">-</span>
-        </div>
-        <!-- FIELD BARU: Tanggal Keluar (diisi manual) -->
-        <div class="data-row">
-          <span class="label">Tanggal Keluar</span>
-          <input type="date" id="tglKeluar" onchange="updateTglKeluar()">
         </div>
       </div>
 
@@ -243,9 +234,9 @@
         <span>Tgl Exp</span>
         <strong id="printTglExp">-</strong>
       </div>
-      <div class="print-row">
-        <span>Tgl Keluar</span>
-        <strong id="printTglKeluar">-</strong>
+      <!-- Baris kosong untuk diisi manual dengan bolpen -->
+      <div class="print-blank">
+        Tgl Keluar : ____________________
       </div>
       <div class="print-line"></div>
       <div class="print-qr">
@@ -260,13 +251,12 @@
     const BLUETOOTH_SERVICE_UUID = '000018f0-0000-1000-8000-00805f9b34fb';
     const BLUETOOTH_CHARACTERISTIC_UUID = '00002af1-0000-1000-8000-00805f9b34fb';
 
-    // Data dari URL parameter + Tanggal Keluar
+    // Data dari URL parameter
     let dataBarang = {
       nama: '-',
       kategori: '-',
       tglMasuk: '-',
-      tglExp: '-',
-      tglKeluar: '-'
+      tglExp: '-'
     };
 
     // ================= AMBIL DATA DARI URL =================
@@ -283,12 +273,6 @@
       document.getElementById('kategori').textContent = dataBarang.kategori;
       document.getElementById('tglMasuk').textContent = dataBarang.tglMasuk;
       document.getElementById('tglExp').textContent = dataBarang.tglExp;
-    }
-
-    // Update Tanggal Keluar saat diubah manual
-    function updateTglKeluar() {
-      const val = document.getElementById('tglKeluar').value;
-      dataBarang.tglKeluar = val || '-';
     }
 
     // ================= FUNGSI KONEKSI PRINTER =================
@@ -337,10 +321,9 @@
       const kategori = data.kategori || '-';
       const tglMasuk = data.tglMasuk || '-';
       const tglExp = data.tglExp || '-';
-      const tglKeluar = data.tglKeluar || '-';
 
-      // Data yang masuk ke QR Code (termasuk Tgl Keluar)
-      const qrData = `${nama}|${kategori}|${tglMasuk}|${tglExp}|${tglKeluar}`;
+      // Data yang masuk ke QR Code (tetap sama seperti semula)
+      const qrData = `${nama}|${kategori}|${tglMasuk}|${tglExp}`;
 
       const commands = [
         '\x1B\x40',                    // Initialize
@@ -350,11 +333,11 @@
         '\x1B\x21\x00',                // Normal
         '========================\n',
         '\x1B\x61\x00',                // Left
-        `Nama      : ${nama}\n`,
-        `Kategori  : ${kategori}\n`,
-        `Tgl Masuk : ${tglMasuk}\n`,
-        `Tgl Exp   : ${tglExp}\n`,
-        `Tgl Keluar: ${tglKeluar}\n`,
+        `Nama     : ${nama}\n`,
+        `Kategori : ${kategori}\n`,
+        `Tgl Masuk: ${tglMasuk}\n`,
+        `Tgl Exp  : ${tglExp}\n`,
+        `Tgl Keluar: ______________\n`,   // <-- untuk diisi manual dengan bolpen
         '========================\n',
         '\x1B\x61\x01',                // Center
         generateQRCodeESC(qrData),
@@ -395,17 +378,13 @@
 
     // ================= FUNGSI CETAK UMUM (DENGAN QR CODE) =================
     function cetakUmum() {
-      // Pastikan Tanggal Keluar ter-update
-      updateTglKeluar();
-
-      const qrData = `${dataBarang.nama}|${dataBarang.kategori}|${dataBarang.tglMasuk}|${dataBarang.tglExp}|${dataBarang.tglKeluar}`;
+      const qrData = `${dataBarang.nama}|${dataBarang.kategori}|${dataBarang.tglMasuk}|${dataBarang.tglExp}`;
 
       // Isi data teks
       document.getElementById('printNama').textContent = dataBarang.nama;
       document.getElementById('printKategori').textContent = dataBarang.kategori;
       document.getElementById('printTglMasuk').textContent = dataBarang.tglMasuk;
       document.getElementById('printTglExp').textContent = dataBarang.tglExp;
-      document.getElementById('printTglKeluar').textContent = dataBarang.tglKeluar;
 
       // Generate QR Code gambar
       const qrImg = document.getElementById('printQrImg');
