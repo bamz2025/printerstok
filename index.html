@@ -80,6 +80,10 @@
       background: #bdc3c7;
       cursor: not-allowed;
     }
+    .btn-print-umum {
+      background: #8e44ad;
+      color: white;
+    }
     .btn-close {
       background: #e74c3c;
       color: white;
@@ -100,6 +104,56 @@
       color: #95a5a6;
       background: #f8f9fa;
     }
+
+    /* ================= STYLES UNTUK CETAK UMUM ================= */
+    #printArea {
+      display: none;
+    }
+    @media print {
+      body * {
+        visibility: hidden;
+      }
+      #printArea, #printArea * {
+        visibility: visible;
+      }
+      #printArea {
+        display: block !important;
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        padding: 20px;
+        font-family: Arial, sans-serif;
+      }
+      .print-label {
+        border: 2px solid #000;
+        padding: 16px;
+        max-width: 300px;
+        margin: 0 auto;
+      }
+      .print-title {
+        text-align: center;
+        font-size: 18px;
+        font-weight: bold;
+        margin-bottom: 10px;
+        text-transform: uppercase;
+      }
+      .print-line {
+        border-bottom: 1px dashed #000;
+        margin: 8px 0;
+      }
+      .print-row {
+        display: flex;
+        justify-content: space-between;
+        margin: 6px 0;
+        font-size: 14px;
+      }
+      .print-qr {
+        text-align: center;
+        margin-top: 12px;
+        font-size: 12px;
+      }
+    }
   </style>
 </head>
 <body>
@@ -108,7 +162,6 @@
       <h1>Cetak Label Barang</h1>
       <p>Thermal Printer Bluetooth</p>
     </div>
-
     <div class="content">
       <!-- Data yang akan dicetak -->
       <div class="data-card">
@@ -129,25 +182,52 @@
           <span class="value" id="tglExp">-</span>
         </div>
       </div>
-
       <!-- Tombol -->
       <button class="btn btn-connect" id="btnConnect" onclick="connectPrinter()">
         Sambungkan Printer Bluetooth
       </button>
-
       <button class="btn btn-print" id="btnPrint" onclick="cetakSekarang()" disabled>
         Cetak Label + QR Code
       </button>
-
+      <!-- TOMBOL BARU: CETAK UMUM -->
+      <button class="btn btn-print-umum" onclick="cetakUmum()">
+        Cetak Umum (Printer Biasa)
+      </button>
       <button class="btn btn-close" onclick="window.close()">
         Tutup
       </button>
-
       <div id="status">Status: Menunggu koneksi printer...</div>
     </div>
-
     <div class="footer">
       Sistem Inventaris Barang • Web Bluetooth
+    </div>
+  </div>
+
+  <!-- AREA CETAK UMUM (hanya muncul saat print) -->
+  <div id="printArea">
+    <div class="print-label">
+      <div class="print-title">LABEL BARANG</div>
+      <div class="print-line"></div>
+      <div class="print-row">
+        <span>Nama</span>
+        <strong id="printNama">-</strong>
+      </div>
+      <div class="print-row">
+        <span>Kategori</span>
+        <strong id="printKategori">-</strong>
+      </div>
+      <div class="print-row">
+        <span>Tgl Masuk</span>
+        <strong id="printTglMasuk">-</strong>
+      </div>
+      <div class="print-row">
+        <span>Tgl Exp</span>
+        <strong id="printTglExp">-</strong>
+      </div>
+      <div class="print-line"></div>
+      <div class="print-qr">
+        QR: <span id="printQrData">-</span>
+      </div>
     </div>
   </div>
 
@@ -156,7 +236,6 @@
     let printerCharacteristic = null;
     const BLUETOOTH_SERVICE_UUID = '000018f0-0000-1000-8000-00805f9b34fb';
     const BLUETOOTH_CHARACTERISTIC_UUID = '00002af1-0000-1000-8000-00805f9b34fb';
-
     // Data dari URL parameter
     let dataBarang = {
       nama: '-',
@@ -164,7 +243,6 @@
       tglMasuk: '-',
       tglExp: '-'
     };
-
     // ================= AMBIL DATA DARI URL =================
     function ambilDataDariURL() {
       const params = new URLSearchParams(window.location.search);
@@ -173,34 +251,27 @@
       dataBarang.kategori = params.get('kategori') || '-';
       dataBarang.tglMasuk = params.get('masuk') || '-';
       dataBarang.tglExp = params.get('exp') || '-';
-
       // Tampilkan di layar
       document.getElementById('nama').textContent = dataBarang.nama;
       document.getElementById('kategori').textContent = dataBarang.kategori;
       document.getElementById('tglMasuk').textContent = dataBarang.tglMasuk;
       document.getElementById('tglExp').textContent = dataBarang.tglExp;
     }
-
     // ================= FUNGSI KONEKSI PRINTER =================
     async function connectPrinter() {
       try {
         updateStatus('Mencari perangkat Bluetooth...', '#3498db');
-
         const device = await navigator.bluetooth.requestDevice({
           filters: [{ services: [BLUETOOTH_SERVICE_UUID] }],
           optionalServices: [BLUETOOTH_SERVICE_UUID]
         });
-
         updateStatus('Menghubungkan ke printer...', '#3498db');
-
         const server = await device.gatt.connect();
         const service = await server.getPrimaryService(BLUETOOTH_SERVICE_UUID);
         printerCharacteristic = await service.getCharacteristic(BLUETOOTH_CHARACTERISTIC_UUID);
-
         updateStatus('Printer berhasil terhubung!', '#27ae60');
         document.getElementById('btnConnect').disabled = true;
         document.getElementById('btnPrint').disabled = false;
-
       } catch (error) {
         console.error(error);
         updateStatus('Error: ' + error.message, '#e74c3c');
@@ -209,14 +280,12 @@
         document.getElementById('btnPrint').disabled = true;
       }
     }
-
     // ================= FUNGSI CETAK =================
     async function cetakSekarang() {
       if (!printerCharacteristic) {
         alert('Harap sambungkan printer terlebih dahulu!');
         return;
       }
-
       try {
         updateStatus('Sedang mencetak...', '#f39c12');
         await printToPrinter(dataBarang);
@@ -227,16 +296,13 @@
         alert('Gagal mencetak: ' + err.message);
       }
     }
-
     async function printToPrinter(data) {
       const nama = data.nama || '-';
       const kategori = data.kategori || '-';
       const tglMasuk = data.tglMasuk || '-';
       const tglExp = data.tglExp || '-';
-
       // Data yang masuk ke QR Code
       const qrData = `${nama}|${kategori}|${tglMasuk}|${tglExp}`;
-
       const commands = [
         '\x1B\x40',                    // Initialize
         '\x1B\x61\x01',                // Center
@@ -255,17 +321,14 @@
         '\n\n',
         '\x1B\x64\x04'                 // Feed 4 lines
       ].join('');
-
       const encoder = new TextEncoder();
       await printerCharacteristic.writeValue(encoder.encode(commands));
     }
-
     // Generate perintah ESC/POS untuk QR Code
     function generateQRCodeESC(data) {
       const storeLen = data.length + 3;
       const pL = storeLen & 0xFF;
       const pH = (storeLen >> 8) & 0xFF;
-
       let qr = '';
       // Model 2
       qr += '\x1D\x28\x6B\x04\x00\x31\x41\x32\x00';
@@ -277,16 +340,35 @@
       qr += '\x1D\x28\x6B' + String.fromCharCode(pL) + String.fromCharCode(pH) + '\x31\x50\x30' + data;
       // Print
       qr += '\x1D\x28\x6B\x03\x00\x31\x51\x30';
-
       return qr;
     }
-
     function updateStatus(message, color) {
       const el = document.getElementById('status');
       el.textContent = 'Status: ' + message;
       el.style.color = color;
       el.style.backgroundColor = color + '18';
       el.style.borderColor = color;
+    }
+
+    // ================= FUNGSI CETAK UMUM (BARU) =================
+    function cetakUmum() {
+      // Isi data ke area print
+      document.getElementById('printNama').textContent = dataBarang.nama;
+      document.getElementById('printKategori').textContent = dataBarang.kategori;
+      document.getElementById('printTglMasuk').textContent = dataBarang.tglMasuk;
+      document.getElementById('printTglExp').textContent = dataBarang.tglExp;
+      document.getElementById('printQrData').textContent = 
+        `${dataBarang.nama}|${dataBarang.kategori}|${dataBarang.tglMasuk}|${dataBarang.tglExp}`;
+
+      updateStatus('Membuka dialog cetak umum...', '#8e44ad');
+      
+      // Buka dialog print browser
+      window.print();
+      
+      // Kembalikan status setelah print dialog ditutup
+      setTimeout(() => {
+        updateStatus('Siap cetak (Thermal / Umum)', '#27ae60');
+      }, 1000);
     }
 
     // Jalankan saat halaman dimuat
