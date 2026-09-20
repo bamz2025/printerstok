@@ -210,8 +210,8 @@
         text-align: center;
       }
       .print-qr img {
-        width: 110px;
-        height: 110px;
+        width: 100px;
+        height: 100px;
       }
 
       /* Mode Label saja → lebih compact */
@@ -349,12 +349,12 @@
       return Math.max(1, Math.min(val, 50));
     }
 
-    // Format data QR Code yang jelas saat di-scan
+    // Format data QR yang jelas saat di-scan
     function buatQrData(data) {
-      return `KATEGORI : ${data.kategori || '-'}\n` +
-             `NAMA BARANG : ${data.nama || '-'}\n` +
-             `TANGGAL MASUK : ${data.tglMasuk || '-'}\n` +
-             `TANGGAL EXPIRED : ${data.tglExp || '-'}`;
+      return `KATEGORI: ${data.kategori || '-'}
+NAMA BARANG: ${data.nama || '-'}
+TANGGAL MASUK: ${data.tglMasuk || '-'}
+TANGGAL EXPIRED: ${data.tglExp || '-'}`;
     }
 
     // ================= FUNGSI KONEKSI PRINTER =================
@@ -404,7 +404,9 @@
       const kategori = data.kategori || '-';
       const tglMasuk = data.tglMasuk || '-';
       const tglExp = data.tglExp || '-';
-      const qrData = buatQrData(data);   // format baru yang jelas
+
+      // Format QR yang jelas & lengkap
+      const qrData = buatQrData(data);
       const mode = getPrintMode();
 
       let oneLabel = ['\x1B\x40']; // Initialize
@@ -464,7 +466,7 @@
       let qr = '';
       // Model 2
       qr += '\x1D\x28\x6B\x04\x00\x31\x41\x32\x00';
-      // Size 5 (diubah dari 6)
+      // Size 5 (diganti dari 6)
       qr += '\x1D\x28\x6B\x03\x00\x31\x43\x05';
       // Error correction L
       qr += '\x1D\x28\x6B\x03\x00\x31\x45\x30';
@@ -487,7 +489,7 @@
     function cetakUmum() {
       const mode = getPrintMode();
       const jumlah = getJumlahLabel();
-      const qrData = buatQrData(dataBarang);   // format baru yang jelas
+      const qrData = buatQrData(dataBarang);
 
       const printArea = document.getElementById('printArea');
       printArea.innerHTML = '';
@@ -509,7 +511,7 @@
           <div class="print-blank">Tgl Keluar: ________</div>
           <div class="print-line"></div>
           <div class="print-qr">
-            <img src="https://api.qrserver.com/v1/create-qr-code/?size=110x110&data=${encodeURIComponent(qrData)}" alt="QR Code">
+            <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(qrData)}" alt="QR Code">
           </div>
         `;
         printArea.appendChild(labelDiv);
