@@ -349,12 +349,18 @@
       return Math.max(1, Math.min(val, 50));
     }
 
-    // ================= FORMAT DATA QR CODE (LEBIH JELAS) =================
-    function buatQrData(data) {
-      // Format yang jelas saat di-scan
-      return `NAMA BARANG : ${data.nama || '-'}
-TANGGAL MASUK : ${data.tglMasuk || '-'}
-TANGGAL EXPIRED : ${data.tglExp || '-'}`;
+    // ================= FORMAT DATA QR CODE (LENGKAP & JELAS) =================
+    function buatDataQR(data) {
+      const nama = data.nama || '-';
+      const kategori = data.kategori || '-';
+      const tglMasuk = data.tglMasuk || '-';
+      const tglExp = data.tglExp || '-';
+
+      // Format jelas saat di-scan
+      return `KATEGORI : ${kategori}
+NAMA BARANG : ${nama}
+TANGGAL MASUK : ${tglMasuk}
+TANGGAL EXPIRED : ${tglExp}`;
     }
 
     // ================= FUNGSI KONEKSI PRINTER =================
@@ -404,7 +410,7 @@ TANGGAL EXPIRED : ${data.tglExp || '-'}`;
       const kategori = data.kategori || '-';
       const tglMasuk = data.tglMasuk || '-';
       const tglExp = data.tglExp || '-';
-      const qrData = buatQrData(data);   // <-- format baru
+      const qrData = buatDataQR(data);   // Format baru yang jelas
       const mode = getPrintMode();
 
       let oneLabel = ['\x1B\x40']; // Initialize
@@ -426,7 +432,7 @@ TANGGAL EXPIRED : ${data.tglExp || '-'}`;
       }
 
       if (mode === 'qr') {
-        // Mode QR saja → tetap tampilkan judul di atas QR
+        // Mode QR saja → tetap tampilkan judul
         oneLabel.push(
           '\x1B\x61\x01',
           '\x1B\x21\x00',
@@ -482,7 +488,7 @@ TANGGAL EXPIRED : ${data.tglExp || '-'}`;
     function cetakUmum() {
       const mode = getPrintMode();
       const jumlah = getJumlahLabel();
-      const qrData = buatQrData(dataBarang);   // <-- format baru
+      const qrData = buatDataQR(dataBarang);   // Format baru yang jelas
 
       const printArea = document.getElementById('printArea');
       printArea.innerHTML = '';
