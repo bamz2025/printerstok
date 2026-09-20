@@ -349,6 +349,14 @@
       return Math.max(1, Math.min(val, 50));
     }
 
+    // ================= FORMAT DATA QR CODE (LEBIH JELAS) =================
+    function buatQrData(data) {
+      // Format yang jelas saat di-scan
+      return `NAMA BARANG : ${data.nama || '-'}
+TANGGAL MASUK : ${data.tglMasuk || '-'}
+TANGGAL EXPIRED : ${data.tglExp || '-'}`;
+    }
+
     // ================= FUNGSI KONEKSI PRINTER =================
     async function connectPrinter() {
       try {
@@ -396,13 +404,12 @@
       const kategori = data.kategori || '-';
       const tglMasuk = data.tglMasuk || '-';
       const tglExp = data.tglExp || '-';
-      const qrData = `${nama}|${kategori}|${tglMasuk}|${tglExp}`;
+      const qrData = buatQrData(data);   // <-- format baru
       const mode = getPrintMode();
 
       let oneLabel = ['\x1B\x40']; // Initialize
 
       if (mode === 'label' || mode === 'both') {
-        // Label lengkap
         oneLabel.push(
           '\x1B\x61\x01',
           '\x1B\x21\x00',
@@ -475,7 +482,7 @@
     function cetakUmum() {
       const mode = getPrintMode();
       const jumlah = getJumlahLabel();
-      const qrData = `${dataBarang.nama}|${dataBarang.kategori}|${dataBarang.tglMasuk}|${dataBarang.tglExp}`;
+      const qrData = buatQrData(dataBarang);   // <-- format baru
 
       const printArea = document.getElementById('printArea');
       printArea.innerHTML = '';
@@ -487,7 +494,6 @@
         if (mode === 'label') labelDiv.classList.add('hide-qr');
         if (mode === 'qr') labelDiv.classList.add('hide-label');
 
-        // Judul selalu ada, termasuk mode QR saja
         labelDiv.innerHTML = `
           <div class="print-title">LABEL BARANG</div>
           <div class="print-line"></div>
