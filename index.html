@@ -72,10 +72,32 @@
       cursor: pointer;
     }
     .option-item:last-child { margin-bottom: 0; }
-    .option-item input {
+    .option-item input[type="radio"] {
       width: 16px;
       height: 16px;
       cursor: pointer;
+    }
+
+    /* Input Jumlah Label */
+    .qty-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px dashed #ccc;
+    }
+    .qty-row label {
+      font-size: 0.92rem;
+      font-weight: 500;
+    }
+    .qty-row input {
+      width: 70px;
+      padding: 6px 10px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 0.95rem;
+      text-align: center;
     }
 
     .btn {
@@ -152,15 +174,16 @@
         left: 0;
         top: 0;
         width: 100%;
-        padding: 20px;
+        padding: 10px;
         font-family: Arial, sans-serif;
       }
       .print-label {
         border: 2px solid #000;
         padding: 16px;
         max-width: 300px;
-        margin: 0 auto;
+        margin: 0 auto 20px auto;
         text-align: center;
+        page-break-inside: avoid;
       }
       .print-title {
         font-size: 18px;
@@ -232,7 +255,7 @@
         </div>
       </div>
 
-      <!-- PILIHAN MODE CETAK (BARU) -->
+      <!-- PILIHAN MODE CETAK + JUMLAH -->
       <div class="print-options">
         <div class="print-options-title">Pilih Mode Cetak:</div>
         <label class="option-item">
@@ -247,6 +270,12 @@
           <input type="radio" name="printMode" value="qr">
           QR Code saja
         </label>
+
+        <!-- INPUT JUMLAH LABEL (BARU) -->
+        <div class="qty-row">
+          <label for="jumlahLabel">Jumlah Label:</label>
+          <input type="number" id="jumlahLabel" value="1" min="1" max="50">
+        </div>
       </div>
 
       <!-- Tombol -->
@@ -270,35 +299,7 @@
   </div>
 
   <!-- AREA CETAK UMUM -->
-  <div id="printArea">
-    <div class="print-label" id="printLabelBox">
-      <div class="print-title">LABEL BARANG</div>
-      <div class="print-line"></div>
-      <div class="print-row">
-        <span>Nama:</span>
-        <strong id="printNama">-</strong>
-      </div>
-      <div class="print-row">
-        <span>Kategori:</span>
-        <strong id="printKategori">-</strong>
-      </div>
-      <div class="print-row">
-        <span>Tgl Masuk:</span>
-        <strong id="printTglMasuk">-</strong>
-      </div>
-      <div class="print-row">
-        <span>Tgl Exp:</span>
-        <strong id="printTglExp">-</strong>
-      </div>
-      <div class="print-blank">
-        Tgl Keluar : ____________________
-      </div>
-      <div class="print-line"></div>
-      <div class="print-qr">
-        <img id="printQrImg" src="" alt="QR Code">
-      </div>
-    </div>
-  </div>
+  <div id="printArea"></div>
 
   <script>
     // ================= KONFIGURASI BLUETOOTH =================
@@ -334,6 +335,12 @@
       return selected ? selected.value : 'both';
     }
 
+    // Ambil jumlah label (default 1)
+    function getJumlahLabel() {
+      const val = parseInt(document.getElementById('jumlahLabel').value) || 1;
+      return Math.max(1, Math.min(val, 50)); // batasi 1-50
+    }
+
     // ================= FUNGSI KONEKSI PRINTER =================
     async function connectPrinter() {
       try {
@@ -365,9 +372,10 @@
         return;
       }
       try {
-        updateStatus('Sedang mencetak...', '#f39c12');
-        await printToPrinter(dataBarang);
-        updateStatus('Berhasil dicetak!', '#27ae60');
+        const jumlah = getJumlahLabel();
+        updateStatus(`Sedang mencetak ${jumlah} label...`, '#f39c12');
+        await printToPrinter(dataBarang, jumlah);
+        updateStatus(`Berhasil dicetak ${jumlah} label!`, '#27ae60');
       } catch (err) {
         console.error(err);
         updateStatus('Gagal mencetak: ' + err.message, '#e74c3c');
@@ -375,7 +383,7 @@
       }
     }
 
-    async function printToPrinter(data) {
+    async function printToPrinter(data, jumlah = 1) {
       const nama = data.nama || '-';
       const kategori = data.kategori || '-';
       const tglMasuk = data.tglMasuk || '-';
@@ -383,17 +391,16 @@
       const qrData = `${nama}|${kategori}|${tglMasuk}|${tglExp}`;
       const mode = getPrintMode();
 
-      let commands = ['\x1B\x40']; // Initialize
+      let oneLabel = ['\x1B\x40']; // Initialize
 
       if (mode === 'label' || mode === 'both') {
-        // Cetak Label
-        commands.push(
-          '\x1B\x61\x01',                // Center
-          '\x1B\x21\x30',                // Double size
+        oneLabel.push(
+          '\x1B\x61\x01',
+          '\x1B\x21\x30',
           'LABEL BARANG\n',
-          '\x1B\x21\x00',                // Normal
+          '\x1B\x21\x00',
           '========================\n',
-          '\x1B\x61\x00',                // Left
+          '\x1B\x61\x00',
           `Nama     : ${nama}\n`,
           `Kategori : ${kategori}\n`,
           `Tgl Masuk: ${tglMasuk}\n`,
@@ -404,18 +411,26 @@
       }
 
       if (mode === 'qr' || mode === 'both') {
-        // Cetak QR Code
-        commands.push(
-          '\x1B\x61\x01',                // Center
+        oneLabel.push(
+          '\x1B\x61\x01',
           generateQRCodeESC(qrData),
           '\n'
         );
       }
 
-      commands.push('\n', '\x1B\x64\x04'); // Feed
+      oneLabel.push('\n', '\x1B\x64\x03'); // Feed
 
       const encoder = new TextEncoder();
-      await printerCharacteristic.writeValue(encoder.encode(commands.join('')));
+      const labelBytes = encoder.encode(oneLabel.join(''));
+
+      // Cetak sebanyak jumlah yang diminta
+      for (let i = 0; i < jumlah; i++) {
+        await printerCharacteristic.writeValue(labelBytes);
+        // jeda kecil antar label agar printer tidak overload
+        if (i < jumlah - 1) {
+          await new Promise(r => setTimeout(r, 300));
+        }
+      }
     }
 
     // Generate perintah ESC/POS untuk QR Code
@@ -424,15 +439,10 @@
       const pL = storeLen & 0xFF;
       const pH = (storeLen >> 8) & 0xFF;
       let qr = '';
-      // Model 2
       qr += '\x1D\x28\x6B\x04\x00\x31\x41\x32\x00';
-      // Size 6
       qr += '\x1D\x28\x6B\x03\x00\x31\x43\x06';
-      // Error correction L
       qr += '\x1D\x28\x6B\x03\x00\x31\x45\x30';
-      // Store data
       qr += '\x1D\x28\x6B' + String.fromCharCode(pL) + String.fromCharCode(pH) + '\x31\x50\x30' + data;
-      // Print
       qr += '\x1D\x28\x6B\x03\x00\x31\x51\x30';
       return qr;
     }
@@ -448,36 +458,56 @@
     // ================= FUNGSI CETAK UMUM =================
     function cetakUmum() {
       const mode = getPrintMode();
+      const jumlah = getJumlahLabel();
       const qrData = `${dataBarang.nama}|${dataBarang.kategori}|${dataBarang.tglMasuk}|${dataBarang.tglExp}`;
 
-      // Isi data
-      document.getElementById('printNama').textContent = dataBarang.nama;
-      document.getElementById('printKategori').textContent = dataBarang.kategori;
-      document.getElementById('printTglMasuk').textContent = dataBarang.tglMasuk;
-      document.getElementById('printTglExp').textContent = dataBarang.tglExp;
+      const printArea = document.getElementById('printArea');
+      printArea.innerHTML = ''; // bersihkan
 
-      // Atur class sesuai mode
-      const box = document.getElementById('printLabelBox');
-      box.classList.remove('hide-label', 'hide-qr');
-      
-      if (mode === 'label') {
-        box.classList.add('hide-qr');
-      } else if (mode === 'qr') {
-        box.classList.add('hide-label');
+      // Buat sebanyak jumlah label
+      for (let i = 0; i < jumlah; i++) {
+        const labelDiv = document.createElement('div');
+        labelDiv.className = 'print-label';
+        
+        if (mode === 'label') labelDiv.classList.add('hide-qr');
+        if (mode === 'qr') labelDiv.classList.add('hide-label');
+
+        labelDiv.innerHTML = `
+          <div class="print-title">LABEL BARANG</div>
+          <div class="print-line"></div>
+          <div class="print-row">
+            <span>Nama:</span>
+            <strong>${dataBarang.nama}</strong>
+          </div>
+          <div class="print-row">
+            <span>Kategori:</span>
+            <strong>${dataBarang.kategori}</strong>
+          </div>
+          <div class="print-row">
+            <span>Tgl Masuk:</span>
+            <strong>${dataBarang.tglMasuk}</strong>
+          </div>
+          <div class="print-row">
+            <span>Tgl Exp:</span>
+            <strong>${dataBarang.tglExp}</strong>
+          </div>
+          <div class="print-blank">
+            Tgl Keluar : ____________________
+          </div>
+          <div class="print-line"></div>
+          <div class="print-qr">
+            <img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(qrData)}" alt="QR Code">
+          </div>
+        `;
+        printArea.appendChild(labelDiv);
       }
 
-      // Generate QR (hanya jika dibutuhkan)
-      const qrImg = document.getElementById('printQrImg');
-      if (mode === 'qr' || mode === 'both') {
-        qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(qrData)}`;
-      }
-
-      updateStatus('Membuka dialog cetak umum...', '#8e44ad');
+      updateStatus(`Membuka dialog cetak ${jumlah} label...`, '#8e44ad');
       
       setTimeout(() => {
         window.print();
         updateStatus('Siap cetak', '#27ae60');
-      }, 600);
+      }, 700);
     }
 
     // Jalankan saat halaman dimuat
