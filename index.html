@@ -116,13 +116,30 @@
       transition: all 0.25s;
     }
     .btn:active { transform: scale(0.98); }
-    .btn-connect { background: #3498db; color: white; }
-    .btn-connect:disabled { background: #95a5a6; cursor: not-allowed; }
-    .btn-print { background: #27ae60; color: white; }
-    .btn-print:disabled { background: #bdc3c7; cursor: not-allowed; }
-    .btn-print-umum { background: #8e44ad; color: white; }
-    .btn-close { background: #e74c3c; color: white; }
-
+    .btn-connect {
+      background: #3498db;
+      color: white;
+    }
+    .btn-connect:disabled {
+      background: #95a5a6;
+      cursor: not-allowed;
+    }
+    .btn-print {
+      background: #27ae60;
+      color: white;
+    }
+    .btn-print:disabled {
+      background: #bdc3c7;
+      cursor: not-allowed;
+    }
+    .btn-print-umum {
+      background: #8e44ad;
+      color: white;
+    }
+    .btn-close {
+      background: #e74c3c;
+      color: white;
+    }
     #status {
       text-align: center;
       padding: 12px;
@@ -140,40 +157,33 @@
       background: #f8f9fa;
     }
 
-    /* ================= STYLES CETAK UMUM - COMPACT + BATAS POTONG ================= */
+    /* ================= STYLES CETAK UMUM - COMPACT ================= */
     #printArea {
       display: none;
     }
     @media print {
-      body * { visibility: hidden; }
-      #printArea, #printArea * { visibility: visible; }
+      body * {
+        visibility: hidden;
+      }
+      #printArea, #printArea * {
+        visibility: visible;
+      }
       #printArea {
         display: block !important;
         position: absolute;
         left: 0;
         top: 0;
         width: 100%;
-        padding: 5px;
+        padding: 4px;
         font-family: Arial, sans-serif;
       }
       .print-label {
-        border: 1px dashed #000;          /* batas potong */
+        border: 1px solid #000;
         padding: 6px 8px;
-        max-width: 200px;
-        margin: 0 auto 12px auto;
+        max-width: 220px;
+        margin: 0 auto 8px auto;
         text-align: left;
         page-break-inside: avoid;
-        position: relative;
-      }
-      .print-label::before {
-        content: "✂ potong";
-        position: absolute;
-        top: -9px;
-        right: 6px;
-        font-size: 8px;
-        background: white;
-        padding: 0 3px;
-        color: #555;
       }
       .print-title {
         font-size: 11px;
@@ -188,7 +198,7 @@
       }
       .print-row {
         font-size: 10px;
-        margin: 1.5px 0;
+        margin: 1px 0;
         line-height: 1.25;
       }
       .print-blank {
@@ -200,10 +210,26 @@
         text-align: center;
       }
       .print-qr img {
-        width: 90px;               /* tetap terbaca */
-        height: 90px;
+        width: 120px;   /* QR TETAP SAMA */
+        height: 120px;
       }
-      /* Mode hide */
+
+      /* Mode Label saja → lebih compact */
+      .hide-qr .print-label {
+        max-width: 200px;
+        padding: 5px 7px;
+      }
+      .hide-qr .print-title {
+        font-size: 10px;
+        margin-bottom: 2px;
+      }
+      .hide-qr .print-row,
+      .hide-qr .print-blank {
+        font-size: 10px;
+        margin: 1px 0;
+      }
+
+      /* Sembunyikan bagian sesuai mode */
       .hide-label .print-title,
       .hide-label .print-line,
       .hide-label .print-row,
@@ -223,6 +249,7 @@
       <p>LAB TERPADU RSSM</p>
     </div>
     <div class="content">
+      <!-- Data yang akan dicetak -->
       <div class="data-card">
         <div class="data-row">
           <span class="label">Nama Barang</span>
@@ -242,6 +269,7 @@
         </div>
       </div>
 
+      <!-- PILIHAN MODE CETAK + JUMLAH -->
       <div class="print-options">
         <div class="print-options-title">Pilih Mode Cetak:</div>
         <label class="option-item">
@@ -263,6 +291,7 @@
         </div>
       </div>
 
+      <!-- Tombol -->
       <button class="btn btn-connect" id="btnConnect" onclick="connectPrinter()">
         Sambungkan Printer Bluetooth
       </button>
@@ -282,9 +311,11 @@
     </div>
   </div>
 
+  <!-- AREA CETAK UMUM -->
   <div id="printArea"></div>
 
   <script>
+    // ================= KONFIGURASI BLUETOOTH =================
     let printerCharacteristic = null;
     const BLUETOOTH_SERVICE_UUID = '000018f0-0000-1000-8000-00805f9b34fb';
     const BLUETOOTH_CHARACTERISTIC_UUID = '00002af1-0000-1000-8000-00805f9b34fb';
@@ -319,6 +350,7 @@
       return Math.max(1, Math.min(val, 50));
     }
 
+    // ================= FUNGSI KONEKSI PRINTER =================
     async function connectPrinter() {
       try {
         updateStatus('Mencari perangkat Bluetooth...', '#3498db');
@@ -342,6 +374,7 @@
       }
     }
 
+    // ================= FUNGSI CETAK THERMAL =================
     async function cetakSekarang() {
       if (!printerCharacteristic) {
         alert('Harap sambungkan printer terlebih dahulu!');
@@ -367,21 +400,21 @@
       const qrData = `${nama}|${kategori}|${tglMasuk}|${tglExp}`;
       const mode = getPrintMode();
 
-      // Versi COMPACT + batas potong
       let oneLabel = ['\x1B\x40']; // Initialize
 
       if (mode === 'label' || mode === 'both') {
+        // Versi COMPACT untuk label (hemat kertas)
         oneLabel.push(
-          '\x1B\x61\x01',                // Center
-          '\x1B\x21\x00',                // Normal (lebih kecil)
+          '\x1B\x61\x01',          // Center
+          '\x1B\x21\x00',          // Normal font (lebih kecil)
           'LABEL BARANG\n',
           '----------------\n',
-          '\x1B\x61\x00',                // Left
-          `Nama: ${nama}\n`,
-          `Kategori: ${kategori}\n`,
-          `Tgl Masuk: ${tglMasuk}\n`,
-          `Tgl Exp: ${tglExp}\n`,
-          `Tgl Keluar: ________\n`,
+          '\x1B\x61\x00',          // Left
+          'Nama: ' + nama + '\n',
+          'Kategori: ' + kategori + '\n',
+          'Tgl Masuk: ' + tglMasuk + '\n',
+          'Tgl Exp: ' + tglExp + '\n',
+          'Tgl Keluar: ________\n',
           '----------------\n'
         );
       }
@@ -394,12 +427,8 @@
         );
       }
 
-      // Batas potong + feed minimal
-      oneLabel.push(
-        '\x1B\x61\x01',
-        '- - - potong - - -\n',
-        '\x1B\x64\x02'                   // Feed 2 baris saja
-      );
+      // Feed lebih sedikit agar hemat kertas
+      oneLabel.push('\x1B\x64\x02');
 
       const encoder = new TextEncoder();
       const labelBytes = encoder.encode(oneLabel.join(''));
@@ -412,15 +441,15 @@
       }
     }
 
-    // QR Code size 5 (masih nyaman dibaca, lebih hemat)
+    // Generate QR Code - UKURAN TETAP 6
     function generateQRCodeESC(data) {
       const storeLen = data.length + 3;
       const pL = storeLen & 0xFF;
       const pH = (storeLen >> 8) & 0xFF;
       let qr = '';
-      qr += '\x1D\x28\x6B\x04\x00\x31\x41\x32\x00';   // Model 2
-      qr += '\x1D\x28\x6B\x03\x00\x31\x43\x05';       // Size 5 (compact tapi tetap terbaca)
-      qr += '\x1D\x28\x6B\x03\x00\x31\x45\x30';       // Error L
+      qr += '\x1D\x28\x6B\x04\x00\x31\x41\x32\x00';
+      qr += '\x1D\x28\x6B\x03\x00\x31\x43\x06';   // Size 6 tetap
+      qr += '\x1D\x28\x6B\x03\x00\x31\x45\x30';
       qr += '\x1D\x28\x6B' + String.fromCharCode(pL) + String.fromCharCode(pH) + '\x31\x50\x30' + data;
       qr += '\x1D\x28\x6B\x03\x00\x31\x51\x30';
       return qr;
@@ -434,16 +463,19 @@
       el.style.borderColor = color;
     }
 
+    // ================= FUNGSI CETAK UMUM =================
     function cetakUmum() {
       const mode = getPrintMode();
       const jumlah = getJumlahLabel();
       const qrData = `${dataBarang.nama}|${dataBarang.kategori}|${dataBarang.tglMasuk}|${dataBarang.tglExp}`;
+
       const printArea = document.getElementById('printArea');
       printArea.innerHTML = '';
 
       for (let i = 0; i < jumlah; i++) {
         const labelDiv = document.createElement('div');
         labelDiv.className = 'print-label';
+
         if (mode === 'label') labelDiv.classList.add('hide-qr');
         if (mode === 'qr') labelDiv.classList.add('hide-label');
 
@@ -457,17 +489,18 @@
           <div class="print-blank">Tgl Keluar: ________</div>
           <div class="print-line"></div>
           <div class="print-qr">
-            <img src="https://api.qrserver.com/v1/create-qr-code/?size=90x90&data=${encodeURIComponent(qrData)}" alt="QR">
+            <img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(qrData)}" alt="QR Code">
           </div>
         `;
         printArea.appendChild(labelDiv);
       }
 
       updateStatus(`Membuka dialog cetak ${jumlah} label...`, '#8e44ad');
+      
       setTimeout(() => {
         window.print();
         updateStatus('Siap cetak', '#27ae60');
-      }, 600);
+      }, 700);
     }
 
     window.onload = function() {
