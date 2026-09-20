@@ -210,7 +210,7 @@
         text-align: center;
       }
       .print-qr img {
-        width: 120px;   /* QR TETAP SAMA */
+        width: 120px;
         height: 120px;
       }
 
@@ -229,8 +229,7 @@
         margin: 1px 0;
       }
 
-      /* Sembunyikan bagian sesuai mode */
-      .hide-label .print-title,
+      /* Mode QR saja: sembunyikan data, TAPI JUDUL TETAP MUNCUL */
       .hide-label .print-line,
       .hide-label .print-row,
       .hide-label .print-blank {
@@ -403,18 +402,28 @@
       let oneLabel = ['\x1B\x40']; // Initialize
 
       if (mode === 'label' || mode === 'both') {
-        // Versi COMPACT untuk label (hemat kertas)
+        // Label lengkap
         oneLabel.push(
-          '\x1B\x61\x01',          // Center
-          '\x1B\x21\x00',          // Normal font (lebih kecil)
+          '\x1B\x61\x01',
+          '\x1B\x21\x00',
           'LABEL BARANG\n',
           '----------------\n',
-          '\x1B\x61\x00',          // Left
+          '\x1B\x61\x00',
           'Nama: ' + nama + '\n',
           'Kategori: ' + kategori + '\n',
           'Tgl Masuk: ' + tglMasuk + '\n',
           'Tgl Exp: ' + tglExp + '\n',
           'Tgl Keluar: ________\n',
+          '----------------\n'
+        );
+      }
+
+      if (mode === 'qr') {
+        // Mode QR saja → tetap tampilkan judul di atas QR
+        oneLabel.push(
+          '\x1B\x61\x01',
+          '\x1B\x21\x00',
+          'LABEL BARANG\n',
           '----------------\n'
         );
       }
@@ -427,7 +436,6 @@
         );
       }
 
-      // Feed lebih sedikit agar hemat kertas
       oneLabel.push('\x1B\x64\x02');
 
       const encoder = new TextEncoder();
@@ -448,7 +456,7 @@
       const pH = (storeLen >> 8) & 0xFF;
       let qr = '';
       qr += '\x1D\x28\x6B\x04\x00\x31\x41\x32\x00';
-      qr += '\x1D\x28\x6B\x03\x00\x31\x43\x06';   // Size 6 tetap
+      qr += '\x1D\x28\x6B\x03\x00\x31\x43\x06';
       qr += '\x1D\x28\x6B\x03\x00\x31\x45\x30';
       qr += '\x1D\x28\x6B' + String.fromCharCode(pL) + String.fromCharCode(pH) + '\x31\x50\x30' + data;
       qr += '\x1D\x28\x6B\x03\x00\x31\x51\x30';
@@ -479,6 +487,7 @@
         if (mode === 'label') labelDiv.classList.add('hide-qr');
         if (mode === 'qr') labelDiv.classList.add('hide-label');
 
+        // Judul selalu ada, termasuk mode QR saja
         labelDiv.innerHTML = `
           <div class="print-title">LABEL BARANG</div>
           <div class="print-line"></div>
