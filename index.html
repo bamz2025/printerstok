@@ -210,8 +210,8 @@
         text-align: center;
       }
       .print-qr img {
-        width: 120px;
-        height: 120px;
+        width: 110px;
+        height: 110px;
       }
 
       /* Mode Label saja → lebih compact */
@@ -349,17 +349,12 @@
       return Math.max(1, Math.min(val, 50));
     }
 
-    // Format data QR Code yang jelas & lengkap
+    // Format data QR Code yang jelas saat di-scan
     function buatQrData(data) {
-      const nama = data.nama || '-';
-      const kategori = data.kategori || '-';
-      const tglMasuk = data.tglMasuk || '-';
-      const tglExp = data.tglExp || '-';
-
-      return `KATEGORI : ${kategori}
-NAMA BARANG : ${nama}
-TANGGAL MASUK : ${tglMasuk}
-TANGGAL EXPIRED : ${tglExp}`;
+      return `KATEGORI : ${data.kategori || '-'}\n` +
+             `NAMA BARANG : ${data.nama || '-'}\n` +
+             `TANGGAL MASUK : ${data.tglMasuk || '-'}\n` +
+             `TANGGAL EXPIRED : ${data.tglExp || '-'}`;
     }
 
     // ================= FUNGSI KONEKSI PRINTER =================
@@ -409,7 +404,7 @@ TANGGAL EXPIRED : ${tglExp}`;
       const kategori = data.kategori || '-';
       const tglMasuk = data.tglMasuk || '-';
       const tglExp = data.tglExp || '-';
-      const qrData = buatQrData(data);   // Format baru yang jelas
+      const qrData = buatQrData(data);   // format baru yang jelas
       const mode = getPrintMode();
 
       let oneLabel = ['\x1B\x40']; // Initialize
@@ -431,6 +426,7 @@ TANGGAL EXPIRED : ${tglExp}`;
       }
 
       if (mode === 'qr') {
+        // Mode QR saja → tetap tampilkan judul di atas QR
         oneLabel.push(
           '\x1B\x61\x01',
           '\x1B\x21\x00',
@@ -460,16 +456,21 @@ TANGGAL EXPIRED : ${tglExp}`;
       }
     }
 
-    // Generate QR Code - UKURAN TETAP 6
+    // Generate QR Code - UKURAN DIGANTI MENJADI 5
     function generateQRCodeESC(data) {
       const storeLen = data.length + 3;
       const pL = storeLen & 0xFF;
       const pH = (storeLen >> 8) & 0xFF;
       let qr = '';
+      // Model 2
       qr += '\x1D\x28\x6B\x04\x00\x31\x41\x32\x00';
-      qr += '\x1D\x28\x6B\x03\x00\x31\x43\x06';   // Size 6 tetap
+      // Size 5 (diubah dari 6)
+      qr += '\x1D\x28\x6B\x03\x00\x31\x43\x05';
+      // Error correction L
       qr += '\x1D\x28\x6B\x03\x00\x31\x45\x30';
+      // Store data
       qr += '\x1D\x28\x6B' + String.fromCharCode(pL) + String.fromCharCode(pH) + '\x31\x50\x30' + data;
+      // Print
       qr += '\x1D\x28\x6B\x03\x00\x31\x51\x30';
       return qr;
     }
@@ -486,7 +487,7 @@ TANGGAL EXPIRED : ${tglExp}`;
     function cetakUmum() {
       const mode = getPrintMode();
       const jumlah = getJumlahLabel();
-      const qrData = buatQrData(dataBarang);   // Format baru yang jelas
+      const qrData = buatQrData(dataBarang);   // format baru yang jelas
 
       const printArea = document.getElementById('printArea');
       printArea.innerHTML = '';
@@ -508,7 +509,7 @@ TANGGAL EXPIRED : ${tglExp}`;
           <div class="print-blank">Tgl Keluar: ________</div>
           <div class="print-line"></div>
           <div class="print-qr">
-            <img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(qrData)}" alt="QR Code">
+            <img src="https://api.qrserver.com/v1/create-qr-code/?size=110x110&data=${encodeURIComponent(qrData)}" alt="QR Code">
           </div>
         `;
         printArea.appendChild(labelDiv);
